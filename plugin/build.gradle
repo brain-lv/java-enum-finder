@@ -10,6 +10,7 @@ plugins {
     // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
     id 'java-gradle-plugin'
     id 'maven-publish'
+    id("com.gradle.plugin-publish") version "1.2.1"
 }
 
 repositories {
@@ -53,10 +54,14 @@ dependencies {
 }
 
 gradlePlugin {
-    // Define the plugin
+    website = 'https://github.com/brain-lv/java-enum-finder'
+    vcsUrl = 'https://github.com/brain-lv/java-enum-finder.git'
     plugins {
         javaEnumFinder {
             id = 'lv.brain.gradle.javaEnumFinder'
+            displayName = 'Java Enum Finder Gradle Plugin'
+            description = 'The Java Enum Finder is a Gradle plugin designed to search for usages of specific Java Enum classes in your project\'s main source. The plugin scans through the source code files to find occurrences of the specified enums and reports the files and line numbers where these enums are used.'
+            tags.set(['java', 'enum', 'search'])
             implementationClass = 'lv.brain.gradle.JavaEnumFinderPlugin'
         }
     }
