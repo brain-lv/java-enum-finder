@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class JavaEnumFinderTask extends DefaultTask {
@@ -70,7 +71,15 @@ public class JavaEnumFinderTask extends DefaultTask {
     }
 
     void parse(Path path, List<String> enumValues) throws IOException {
-        createJavaParser().parse(path).getResult().ifPresent(compilationUnit -> compilationUnit.accept(new SourceVisitor(path, target, enumValues), null));
+        createJavaParser().parse(path).getResult().ifPresent(compilationUnit -> {
+            SourceVisitor visitor = new SourceVisitor(path, target, enumValues);
+            compilationUnit.accept(visitor, null);
+            for (Map.Entry<Enum<?>, List<String>> row : visitor.getData().entrySet()) {
+                for (String line : row.getValue()) {
+                    System.out.println(row.getKey() + " / " + line);
+                }
+            }
+        });
     }
 
     @Input
