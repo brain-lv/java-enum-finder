@@ -15,6 +15,9 @@ public class JavaEnumFinderPlugin implements Plugin<Project> {
 
         JavaEnumFinderTask task = project.getTasks().create("javaEnumFind", JavaEnumFinderTask.class);
 
-        project.afterEvaluate(proj -> task.setTarget(extension.getTarget()));
+        project.afterEvaluate(proj -> {
+            task.setTarget(extension.getTarget());
+            task.setFile(extension.getFile());
+        });
     }
 }

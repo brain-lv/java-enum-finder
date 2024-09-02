@@ -9,15 +9,16 @@ import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * A simple functional test for the 'lv.brain.gradle.javaEnumFinder' plugin.
@@ -67,22 +68,91 @@ class JavaEnumFinderPluginFunctionalTest {
         runner.withArguments("javaEnumFind");
         runner.withProjectDir(projectDir);
         BuildResult result = runner.build();
-        List<String> actualLines = result.getOutput().replaceAll(root, "").replaceAll(projectDir.getAbsolutePath(), "").lines().filter(s -> !s.contains("BUILD SUCCESSFUL") && !s.contains(" actionable task")).collect(Collectors.toList());
+
+        String output = result.getOutput().replaceAll(root, "").replaceAll(projectDir.getAbsolutePath(), "");
+        Stream<String> lines = output.lines();
+        List<String> actualLines = lines.filter(s -> !s.contains("BUILD SUCCESSFUL") && !s.contains(" actionable task")).collect(Collectors.toList());
+
+        assertTrue(actualLines.contains("/private/build/AccessMode.csv"));
+
         actualLines.remove("");
+        actualLines.remove("/private/build/AccessMode.csv");
         actualLines.remove("> Task :javaEnumFind");
         actualLines.remove("");
         List<String> expectedLines = Arrays.asList(
-            "EXECUTE / 7:/private/src/main/java/fake/ClassValue3.java",
-            "EXECUTE / 7:/private/src/main/java/fake/ClassValue2.java",
-            "WRITE / 14:/private/src/main/java/fake/ClassValue5.java",
-            "READ / 10:/private/src/main/java/fake/ClassValue5.java",
-            "EXECUTE / 12:/private/src/main/java/fake/ClassValue5.java",
-            "EXECUTE / 13:/private/src/main/java/fake/ClassValue5.java",
-            "EXECUTE / 7:/private/src/main/java/fake/ClassValue4.java"
+                "EXECUTE,7,/private/src/main/java/fake/ClassValue3.java",
+                "EXECUTE,7,/private/src/main/java/fake/ClassValue2.java",
+                "WRITE,14,/private/src/main/java/fake/ClassValue5.java",
+                "READ,10,/private/src/main/java/fake/ClassValue5.java",
+                "EXECUTE,12,/private/src/main/java/fake/ClassValue5.java",
+                "EXECUTE,13,/private/src/main/java/fake/ClassValue5.java",
+                "EXECUTE,7,/private/src/main/java/fake/ClassValue4.java"
         );
         actualLines.sort(String::compareTo);
         expectedLines.sort(String::compareTo);
         // Verify the result
+
+        assertEquals(expectedLines, loadFile(new File(projectDir, "build/AccessMode.csv"), projectDir));
+
+        assertEquals(expectedLines, actualLines);
+    }
+
+    @Test void canRunTaskSources() throws IOException {
+        File source = new File(root, "src/functionalTest/java/fake");
+        File desc = new File(projectDir, "src/main/java/fake");
+        if(desc.exists() || desc.mkdirs()) {
+            for (File file : source.listFiles()) {
+                Files.copy(file, new File(desc, file.getName()));
+            }
+        }
+        else{
+            throw new IOException("unable to copy source files");
+        }
+
+        writeString(getSettingsFile(), "");
+        writeString(getBuildFile(),
+                "plugins {\n" +
+                "  id('java')\n" +
+                "  id('lv.brain.gradle.javaEnumFinder')\n" +
+                "}\n" +
+                "javaEnumFinder{\n" +
+                "  target = java.nio.file.AccessMode\n" +
+                "  sources = files(\""+source+"\", \""+source+"\")\n" +
+                "}\n");
+
+        // Run the build
+        GradleRunner runner = GradleRunner.create();
+        runner.forwardOutput();
+        runner.withPluginClasspath();
+        runner.withArguments("javaEnumFind");
+        runner.withProjectDir(projectDir);
+        BuildResult result = runner.build();
+
+        String output = result.getOutput().replaceAll(root, "").replaceAll(projectDir.getAbsolutePath(), "");
+        Stream<String> lines = output.lines();
+        List<String> actualLines = lines.filter(s -> !s.contains("BUILD SUCCESSFUL") && !s.contains(" actionable task")).collect(Collectors.toList());
+
+        assertTrue(actualLines.contains("/private/build/AccessMode.csv"));
+
+        actualLines.remove("");
+        actualLines.remove("/private/build/AccessMode.csv");
+        actualLines.remove("> Task :javaEnumFind");
+        actualLines.remove("");
+        List<String> expectedLines = Arrays.asList(
+                "EXECUTE,7,/private/src/main/java/fake/ClassValue3.java",
+                "EXECUTE,7,/private/src/main/java/fake/ClassValue2.java",
+                "WRITE,14,/private/src/main/java/fake/ClassValue5.java",
+                "READ,10,/private/src/main/java/fake/ClassValue5.java",
+                "EXECUTE,12,/private/src/main/java/fake/ClassValue5.java",
+                "EXECUTE,13,/private/src/main/java/fake/ClassValue5.java",
+                "EXECUTE,7,/private/src/main/java/fake/ClassValue4.java"
+        );
+        actualLines.sort(String::compareTo);
+        expectedLines.sort(String::compareTo);
+        // Verify the result
+
+        assertEquals(expectedLines, loadFile(new File(projectDir, "build/AccessMode.csv"), projectDir));
+
         assertEquals(expectedLines, actualLines);
     }
 
@@ -90,5 +160,20 @@ class JavaEnumFinderPluginFunctionalTest {
         try (Writer writer = new FileWriter(file)) {
             writer.write(string);
         }
+    }
+
+    private List<String> loadFile(File filePath, File projectDir){
+        List<String> lines = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                lines.add(line.replaceAll(projectDir.getAbsolutePath(), ""));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        lines.sort(String::compareTo);
+        return lines;
     }
 }

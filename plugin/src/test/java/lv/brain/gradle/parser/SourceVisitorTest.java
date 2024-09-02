@@ -10,10 +10,12 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.AccessMode;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import static java.nio.file.AccessMode.*;
+import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -31,7 +33,7 @@ class SourceVisitorTest {
     void t2() throws IOException {
 
         assertEquals(Map.of(
-                EXECUTE, results("7:src/functionalTest/java/fake/ClassValue2.java")
+                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/java/fake/ClassValue2.java"))
         ), helper(("src/functionalTest/java/fake/ClassValue2.java")));
     }
 
@@ -39,7 +41,7 @@ class SourceVisitorTest {
     void t3() throws IOException {
 
         assertEquals(Map.of(
-                EXECUTE, results("7:src/functionalTest/java/fake/ClassValue3.java")
+                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/java/fake/ClassValue3.java"))
         ), helper(("src/functionalTest/java/fake/ClassValue3.java")));
     }
 
@@ -47,7 +49,7 @@ class SourceVisitorTest {
     void t4() throws IOException {
 
         assertEquals(Map.of(
-                EXECUTE, results("7:src/functionalTest/java/fake/ClassValue4.java")
+                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/java/fake/ClassValue4.java"))
         ), helper(("src/functionalTest/java/fake/ClassValue4.java")));
     }
 
@@ -55,30 +57,28 @@ class SourceVisitorTest {
     void t5() throws IOException {
 
         assertEquals(Map.of(
-                READ, results("10:src/functionalTest/java/fake/ClassValue5.java"),
-                EXECUTE, results(
-                        "12:src/functionalTest/java/fake/ClassValue5.java",
-                        "13:src/functionalTest/java/fake/ClassValue5.java"
+                READ, asList(
+                        data(READ, 10,"src/functionalTest/java/fake/ClassValue5.java")
                 ),
-                WRITE, results(
-                        "14:src/functionalTest/java/fake/ClassValue5.java"
+                EXECUTE, asList(
+                        data(EXECUTE, 12,"src/functionalTest/java/fake/ClassValue5.java"),
+                        data(EXECUTE, 13,"src/functionalTest/java/fake/ClassValue5.java")
+                ),
+                WRITE, asList(
+                        data(WRITE,14,"src/functionalTest/java/fake/ClassValue5.java")
                 )
         ), helper(("src/functionalTest/java/fake/ClassValue5.java")));
     }
 
-    static List<String> results(String... expected) {
-        return stream(expected).map(v -> {
-            String[] parts = v.split(":");
-            parts[1] = root + "/" + parts[1];
-            return String.join(":", parts);
-        }).toList();
+    static SourceVisitor.Data data(Enum<?> key, int line, String path){
+        return new SourceVisitor.Data(key, line, Path.of(root + "/" + path));
     }
 
-    static Map<Enum<?>, List<String>> helper(String path) throws IOException {
+    static Map<Enum<?>, List<SourceVisitor.Data>> helper(String path) throws IOException {
         return helper(Path.of(root + "/" + path));
     }
 
-    static Map<Enum<?>, List<String>> helper(Path path) throws IOException {
+    static Map<Enum<?>, List<SourceVisitor.Data>> helper(Path path) throws IOException {
         CombinedTypeSolver typeSolver = new CombinedTypeSolver();
         typeSolver.add(new ReflectionTypeSolver());
 
