@@ -1,6 +1,6 @@
 package fake;
 
-import static java.nio.file.AccessMode.*;
+import static java.nio.file.AccessMode.EXECUTE;
 
 public class ClassValue2 {
     public static void main(String[] args) {

@@ -7,75 +7,76 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessMode;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.collect.ImmutableMap.*;
 import static java.nio.file.AccessMode.*;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SourceVisitorTest {
-    private static final List<String> enumValues = stream(java.nio.file.AccessMode.class.getEnumConstants()).map(Enum::name).toList();
+    private static final List<String> enumValues = stream(java.nio.file.AccessMode.class.getEnumConstants()).map(Enum::name).collect(toList());
     private static final String root = System.getProperty("user.dir");
 
     @Test
     void t1() throws IOException {
-        System.out.println(System.getProperty("user.dir"));
-        assertEquals(Map.of(), helper(("src/functionalTest/java/fake/ClassValue1.java")));
+        assertEquals(of(), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue1.java")));
     }
 
     @Test
     void t2() throws IOException {
 
-        assertEquals(Map.of(
-                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/java/fake/ClassValue2.java"))
-        ), helper(("src/functionalTest/java/fake/ClassValue2.java")));
+        assertEquals(of(
+                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue2.java"))
+        ), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue2.java")));
     }
 
     @Test
     void t3() throws IOException {
 
-        assertEquals(Map.of(
-                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/java/fake/ClassValue3.java"))
-        ), helper(("src/functionalTest/java/fake/ClassValue3.java")));
+        assertEquals(of(
+                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue3.java"))
+        ), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue3.java")));
     }
 
     @Test
     void t4() throws IOException {
 
-        assertEquals(Map.of(
-                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/java/fake/ClassValue4.java"))
-        ), helper(("src/functionalTest/java/fake/ClassValue4.java")));
+        assertEquals(of(
+                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue4.java"))
+        ), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue4.java")));
     }
 
     @Test
     void t5() throws IOException {
 
-        assertEquals(Map.of(
+        assertEquals(of(
                 READ, asList(
-                        data(READ, 10,"src/functionalTest/java/fake/ClassValue5.java")
+                        data(READ, 10,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java")
                 ),
                 EXECUTE, asList(
-                        data(EXECUTE, 12,"src/functionalTest/java/fake/ClassValue5.java"),
-                        data(EXECUTE, 13,"src/functionalTest/java/fake/ClassValue5.java")
+                        data(EXECUTE, 12,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java"),
+                        data(EXECUTE, 13,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java")
                 ),
                 WRITE, asList(
-                        data(WRITE,14,"src/functionalTest/java/fake/ClassValue5.java")
+                        data(WRITE,14,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java")
                 )
-        ), helper(("src/functionalTest/java/fake/ClassValue5.java")));
+        ), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java")));
     }
 
     static SourceVisitor.Data data(Enum<?> key, int line, String path){
-        return new SourceVisitor.Data(key, line, Path.of(root + "/" + path));
+        return new SourceVisitor.Data(key, line, new File(root + "/" + path).toPath());
     }
 
     static Map<Enum<?>, List<SourceVisitor.Data>> helper(String path) throws IOException {
-        return helper(Path.of(root + "/" + path));
+        return helper(new File(root + "/" + path).toPath());
     }
 
     static Map<Enum<?>, List<SourceVisitor.Data>> helper(Path path) throws IOException {

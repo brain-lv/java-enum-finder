@@ -12,7 +12,15 @@ plugins {
     id 'maven-publish'
     id("com.gradle.plugin-publish") version "1.2.1"
 }
-
+java {
+    // Define the Java toolchain to use for compiling and running the build
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+    // Set the target compatibility to Java 8
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
@@ -31,6 +39,8 @@ testing {
             dependencies {
                 // functionalTest test suite depends on the production code in tests
                 implementation project()
+
+                implementation 'commons-io:commons-io:2.+'
             }
 
             targets {

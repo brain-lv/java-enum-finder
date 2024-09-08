@@ -1,0 +1,7 @@
+PUBLIC,7,/m1/src/main/java/fake/ClassValue3.java
+PUBLIC,12,/m1/src/main/java/fake/ClassValue5.java
+PUBLIC,13,/m1/src/main/java/fake/ClassValue5.java
+PUBLIC,7,/m2/src/main/java/fake/ClassValue4.java
+PRIVATE,10,/m1/src/main/java/fake/ClassValue5.java
+PRIVATE,14,/m1/src/main/java/fake/ClassValue5.java
+PRIVATE,7,/m2/src/main/java/fake/ClassValue2.java

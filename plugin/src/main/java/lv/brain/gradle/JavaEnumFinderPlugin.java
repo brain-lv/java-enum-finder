@@ -5,8 +5,8 @@ package lv.brain.gradle;
 
 import lv.brain.gradle.extension.JavaEnumFinderExtension;
 import lv.brain.gradle.task.JavaEnumFinderTask;
-import org.gradle.api.Project;
 import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 
 public class JavaEnumFinderPlugin implements Plugin<Project> {
     @Override
@@ -17,6 +17,7 @@ public class JavaEnumFinderPlugin implements Plugin<Project> {
 
         project.afterEvaluate(proj -> {
             task.setTarget(extension.getTarget());
+            task.setSources(extension.getSources());
             task.setFile(extension.getFile());
         });
     }

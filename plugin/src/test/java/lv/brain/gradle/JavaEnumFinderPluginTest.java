@@ -1,9 +1,10 @@
 package lv.brain.gradle;
 
-import org.gradle.testfixtures.ProjectBuilder;
 import org.gradle.api.Project;
+import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class JavaEnumFinderPluginTest {
     @Test void pluginRegistersATask() {

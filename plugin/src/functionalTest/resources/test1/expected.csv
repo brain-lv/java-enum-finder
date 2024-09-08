@@ -1,0 +1,7 @@
+READ,10,/src/main/java/fake/ClassValue5.java
+WRITE,14,/src/main/java/fake/ClassValue5.java
+EXECUTE,7,/src/main/java/fake/ClassValue2.java
+EXECUTE,7,/src/main/java/fake/ClassValue3.java
+EXECUTE,7,/src/main/java/fake/ClassValue4.java
+EXECUTE,12,/src/main/java/fake/ClassValue5.java
+EXECUTE,13,/src/main/java/fake/ClassValue5.java

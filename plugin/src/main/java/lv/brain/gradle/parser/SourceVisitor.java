@@ -6,6 +6,7 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.Name;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -79,7 +80,7 @@ public class SourceVisitor  extends VoidVisitorAdapter<Void> {
         return data;
     }
 
-    public static class Data{
+    public static class Data implements Comparable<Data>{
         private final Enum<?> key;
         private final int line;
         private final Path path;
@@ -113,6 +114,26 @@ public class SourceVisitor  extends VoidVisitorAdapter<Void> {
         @Override
         public int hashCode() {
             return Objects.hash(key, line, path);
+        }
+
+        @Override
+        public int compareTo(@NotNull SourceVisitor.Data o) {
+            Enum<?> oKey = o.key;
+            int keyResult = 0;
+            if(oKey instanceof Comparable){
+                keyResult = ((Comparable<Enum<?>>)oKey).compareTo(key);
+            }
+            else{
+                keyResult = oKey.name().compareTo(key.name());
+            }
+            if (keyResult != 0) {
+                return keyResult * -1;
+            }
+            int pathResult = o.path.compareTo(path);
+            if(pathResult != 0){
+                return pathResult * -1;
+            }
+            return Integer.compare(o.line, line) * -1;
         }
     }
 }

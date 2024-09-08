@@ -1,0 +1,16 @@
+plugins {
+    id('java')
+    id('lv.brain.gradle.javaEnumFinder')
+}
+javaEnumFinder{
+    target = "com.github.javaparser.ast.AccessSpecifier"
+    sources = files(rootProject.rootDir)
+}
+repositories {
+    mavenCentral()
+}
+dependencies {
+    implementation 'com.github.javaparser:javaparser-core:3.25.4'
+
+    implementation project(':m1')
+}

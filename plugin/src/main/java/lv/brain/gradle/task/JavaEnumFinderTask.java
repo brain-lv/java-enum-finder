@@ -9,31 +9,37 @@ import lv.brain.gradle.parser.SourceVisitor;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginExtension;
-import org.gradle.api.tasks.*;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class JavaEnumFinderTask extends DefaultTask {
-    private Class<? extends Enum<?>> target;
+    private Class<? extends Enum<?>> targetClass;
+    private String target;
     private File file;
     private FileCollection sources;
-    private final List<List<String>> data = new ArrayList<>();
+    private final List<SourceVisitor.Data> data = new ArrayList<>();
 
     @TaskAction
     public void findJiraUsages() {
-        List<String> enumValues = Arrays.stream(target.getEnumConstants()).map(Enum::name).toList();
+        List<String> enumValues = Arrays.stream(targetClass.getEnumConstants()).map(Enum::name).collect(Collectors.toList());
 
         Set<File> mainJavaSrcDirs = getSourceFolders();
         data.clear();
         walk(mainJavaSrcDirs, enumValues);
+        data.sort(SourceVisitor.Data::compareTo);
 
         if(!getProject().getBuildDir().isDirectory()){
             if(!getProject().getBuildDir().mkdir()){
@@ -41,7 +47,7 @@ public class JavaEnumFinderTask extends DefaultTask {
             }
         }
 
-        File destFile = file == null ? new File(getProject().getBuildDir(), target.getSimpleName()+".csv") : file;
+        File destFile = file == null ? new File(getProject().getBuildDir(), targetClass.getSimpleName()+".csv") : file;
 
 
         buildCSV(destFile, data);
@@ -88,33 +94,31 @@ public class JavaEnumFinderTask extends DefaultTask {
 
     void parse(Path path, Path mainDir, List<String> enumValues) throws IOException {
         createJavaParser().parse(path).getResult().ifPresent(compilationUnit -> {
-            SourceVisitor visitor = new SourceVisitor(path, target, enumValues);
+            SourceVisitor visitor = new SourceVisitor(path, targetClass, enumValues);
             compilationUnit.accept(visitor, null);
             for (Map.Entry<Enum<?>, List<SourceVisitor.Data>> row : visitor.getData().entrySet()) {
-                for (SourceVisitor.Data line : row.getValue()) {
-                    data.add(Arrays.asList(line.getKey().name(), String.valueOf(line.getLine()), line.getPath().toString()));
-                }
+                data.addAll(row.getValue());
             }
         });
     }
 
-    void buildCSV(File destFile, List<List<String>> data){
-        System.out.println(destFile);
+    void buildCSV(File destFile, List<SourceVisitor.Data> data){
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(destFile))) {
-            for (List<String> row : data) {
-                String line = String.join(",", row);
-                writer.write(line);
+            for (SourceVisitor.Data row : data) {
+                writer.write(row.getKey().name());
+                writer.write(",");
+                writer.write(String.valueOf(row.getLine()));
+                writer.write(",");
+                writer.write(row.getPath().toString().replace(getProject().getRootProject().getRootDir().getPath(), ""));
                 writer.newLine();
-                System.out.println(line);
             }
-            //System.out.println("CSV file generated at: " + getProject().getBuildDir() + "/" + outputFileName);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write CSV file", e);
         }
     }
 
     @Input
-    public Class<? extends Enum<?>> getTarget() {
+    public String getTarget() {
         return target;
     }
 
@@ -130,8 +134,9 @@ public class JavaEnumFinderTask extends DefaultTask {
         return file;
     }
 
-    public void setTarget(Class<? extends Enum<?>> target) {
+    public void setTarget(String target) {
         this.target = target;
+        this.targetClass = buildTargetClass(target);
     }
 
     public void setFile(File file) {
@@ -140,5 +145,33 @@ public class JavaEnumFinderTask extends DefaultTask {
 
     public void setSources(FileCollection sources) {
         this.sources = sources;
+    }
+
+    public Class<? extends Enum<?>> buildTargetClass(final String enumClassName){
+        FileCollection runtimeClasspath = getProject().getConfigurations().getByName("runtimeClasspath");
+
+        // Create a URLClassLoader with the runtime classpath
+        try (URLClassLoader classLoader = new URLClassLoader(
+                runtimeClasspath.getFiles().stream().map(f -> {
+                    try {
+                        return f.toURI().toURL();
+                    } catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).toArray(URL[]::new),
+                this.getClass().getClassLoader())) {
+
+            // Load the class dynamically from the runtime classpath
+            Class<?> enumClass = classLoader.loadClass(enumClassName);
+
+            if (Enum.class.isAssignableFrom(enumClass)) {
+                return (Class<? extends Enum<?>>) enumClass;
+            } else {
+                System.out.println(enumClassName + " is not an enum.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

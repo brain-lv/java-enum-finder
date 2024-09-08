@@ -2,7 +2,7 @@ package fake;
 
 import java.nio.file.AccessMode;
 
-import static java.nio.file.AccessMode.*;
+import static java.nio.file.AccessMode.READ;
 
 public class ClassValue5 {
     private static final String EXECUTE = "FAKE_VALUE";
