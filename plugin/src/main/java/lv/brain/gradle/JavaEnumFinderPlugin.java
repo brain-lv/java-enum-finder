@@ -8,6 +8,10 @@ import lv.brain.gradle.task.JavaEnumFinderTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
+/**
+ * this class is used in /plugin/build.gradle as implementationClass
+ */
+@SuppressWarnings("unused")
 public class JavaEnumFinderPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {

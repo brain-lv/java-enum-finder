@@ -6,6 +6,7 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.Name;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
@@ -18,6 +19,7 @@ public class SourceVisitor  extends VoidVisitorAdapter<Void> {
     private final Collection<String> values;
     private final Collection<String> skip = new HashSet<>();
 
+    @Getter
     private final Map<Enum<?>, List<Data>> data = new HashMap<>();
     private boolean hasStaticImport;
 
@@ -57,9 +59,11 @@ public class SourceVisitor  extends VoidVisitorAdapter<Void> {
         boolean match = n.getScope().toString().equals(target.getName()) && values.contains(n.getNameAsString());
 
         if (match || values.contains(n.getNameAsString()) && n.getScope().toString().equals(target.getSimpleName())) {
-            int line = n.getBegin().get().line;
-            Enum<?> anEnum = Arrays.stream(this.target.getEnumConstants()).filter(k -> k.name().equals(n.getNameAsString())).findFirst().orElse(null);
-            data.computeIfAbsent(anEnum, k ->new ArrayList<>()).add(new Data(anEnum, line, filePath));
+            n.getBegin().ifPresent(position -> {
+                int line = position.line;
+                Enum<?> anEnum = Arrays.stream(this.target.getEnumConstants()).filter(k -> k.name().equals(n.getNameAsString())).findFirst().orElse(null);
+                data.computeIfAbsent(anEnum, k ->new ArrayList<>()).add(new Data(anEnum, line, filePath));
+            });
         }
 
         super.visit(n, arg);
@@ -68,18 +72,17 @@ public class SourceVisitor  extends VoidVisitorAdapter<Void> {
     @Override
     public void visit(NameExpr n, Void arg) {
         if (hasStaticImport && (values.contains(n.getNameAsString())&& !skip.contains(n.getNameAsString()))) {
-                int line = n.getBegin().get().line;
-                Enum<?> anEnum = Arrays.stream(this.target.getEnumConstants()).filter(k -> k.name().equals(n.getNameAsString())).findFirst().orElse(null);
-                data.computeIfAbsent(anEnum, k ->new ArrayList<>()).add(new Data(anEnum, line, filePath));
+                n.getBegin().ifPresent(position -> {
+                    int line = position.line;
+                    Enum<?> anEnum = Arrays.stream(this.target.getEnumConstants()).filter(k -> k.name().equals(n.getNameAsString())).findFirst().orElse(null);
+                    data.computeIfAbsent(anEnum, k ->new ArrayList<>()).add(new Data(anEnum, line, filePath));
 
+                });
         }
         super.visit(n, arg);
     }
 
-    public Map<Enum<?>, List<Data>> getData() {
-        return data;
-    }
-
+    @Getter
     public static class Data implements Comparable<Data>{
         private final Enum<?> key;
         private final int line;
@@ -89,18 +92,6 @@ public class SourceVisitor  extends VoidVisitorAdapter<Void> {
             this.key = key;
             this.line = line;
             this.path = path;
-        }
-
-        public Enum<?> getKey() {
-            return key;
-        }
-
-        public int getLine() {
-            return line;
-        }
-
-        public Path getPath() {
-            return path;
         }
 
         @Override
@@ -118,18 +109,11 @@ public class SourceVisitor  extends VoidVisitorAdapter<Void> {
 
         @Override
         public int compareTo(@NotNull SourceVisitor.Data o) {
-            Enum<?> oKey = o.key;
-            int keyResult = 0;
-            if(oKey instanceof Comparable){
-                keyResult = ((Comparable<Enum<?>>)oKey).compareTo(key);
-            }
-            else{
-                keyResult = oKey.name().compareTo(key.name());
-            }
+            final int keyResult = ((Comparable<Enum<?>>) o.key).compareTo(key);
             if (keyResult != 0) {
                 return keyResult * -1;
             }
-            int pathResult = o.path.compareTo(path);
+            final int pathResult = o.path.compareTo(path);
             if(pathResult != 0){
                 return pathResult * -1;
             }

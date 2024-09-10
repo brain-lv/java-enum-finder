@@ -7,6 +7,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import lv.brain.gradle.parser.SourceVisitor;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.Optional;
@@ -82,7 +83,7 @@ public class JavaEnumFinderTask extends DefaultTask {
                     .filter(path -> path.toString().endsWith(".java"))
                     .forEach(path -> {
                         try {
-                            parse(path, dir, enumValues);
+                            parse(path, enumValues);
                         } catch (IOException e) {
                             throw new IllegalArgumentException("unable to parse file: " + path, e);
                         }
@@ -92,7 +93,7 @@ public class JavaEnumFinderTask extends DefaultTask {
         }
     }
 
-    void parse(Path path, Path mainDir, List<String> enumValues) throws IOException {
+    void parse(Path path, List<String> enumValues) throws IOException {
         createJavaParser().parse(path).getResult().ifPresent(compilationUnit -> {
             SourceVisitor visitor = new SourceVisitor(path, targetClass, enumValues);
             compilationUnit.accept(visitor, null);
@@ -156,7 +157,7 @@ public class JavaEnumFinderTask extends DefaultTask {
                     try {
                         return f.toURI().toURL();
                     } catch (MalformedURLException e) {
-                        throw new RuntimeException(e);
+                        throw new GradleException("unable to resolve dependency: " + f,e);
                     }
                 }).toArray(URL[]::new),
                 this.getClass().getClassLoader())) {
@@ -169,8 +170,8 @@ public class JavaEnumFinderTask extends DefaultTask {
             } else {
                 System.out.println(enumClassName + " is not an enum.");
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new GradleException("unable to initialize enum: " + enumClassName, e);
         }
         return null;
     }

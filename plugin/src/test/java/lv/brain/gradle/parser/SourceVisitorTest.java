@@ -34,7 +34,7 @@ class SourceVisitorTest {
     void t2() throws IOException {
 
         assertEquals(of(
-                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue2.java"))
+                EXECUTE, rows(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue2.java"))
         ), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue2.java")));
     }
 
@@ -42,7 +42,7 @@ class SourceVisitorTest {
     void t3() throws IOException {
 
         assertEquals(of(
-                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue3.java"))
+                EXECUTE, rows(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue3.java"))
         ), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue3.java")));
     }
 
@@ -50,7 +50,7 @@ class SourceVisitorTest {
     void t4() throws IOException {
 
         assertEquals(of(
-                EXECUTE, asList(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue4.java"))
+                EXECUTE, rows(data(EXECUTE, 7,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue4.java"))
         ), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue4.java")));
     }
 
@@ -58,17 +58,21 @@ class SourceVisitorTest {
     void t5() throws IOException {
 
         assertEquals(of(
-                READ, asList(
+                READ, rows(
                         data(READ, 10,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java")
                 ),
-                EXECUTE, asList(
+                EXECUTE, rows(
                         data(EXECUTE, 12,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java"),
                         data(EXECUTE, 13,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java")
                 ),
-                WRITE, asList(
+                WRITE, rows(
                         data(WRITE,14,"src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java")
                 )
         ), helper(("src/functionalTest/resources/test1/input/src/main/java/fake/ClassValue5.java")));
+    }
+
+    static List<SourceVisitor.Data> rows(SourceVisitor.Data... rows){
+        return asList(rows);
     }
 
     static SourceVisitor.Data data(Enum<?> key, int line, String path){

@@ -3,7 +3,7 @@ package lv.brain.gradle;
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
@@ -11,21 +11,31 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class JavaEnumFinderPluginFunctionalTest {
+    private final File DIR_SCENARIOS = new File(Objects.requireNonNull(JavaEnumFinderPluginFunctionalTest.class.getClassLoader().getResource("scenarios")).getFile());
 
     @TempDir
     File projectDir;
 
-    @Test
-    void test1() throws IOException {
-        File sourceDir = new File(this.getClass().getClassLoader().getResource("test1/input").getFile());
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioArgumentsProvider.class)
+    void verify(final String scenario, String expectedFilePath) throws IOException {
+        File inputDirectory = new File(DIR_SCENARIOS, scenario);
 
-        FileUtils.copyDirectory(sourceDir, projectDir);
+        FileUtils.copyDirectory(new File(inputDirectory, "input"), projectDir);
+        List<String> expectedLines = FileUtils.readLines(new File(inputDirectory, "expected.csv"), Charset.defaultCharset());
+        List<String> outputLines = FileUtils.readLines(new File(inputDirectory, "output.txt"), Charset.defaultCharset());
 
         GradleRunner runner = GradleRunner.create();
         runner.forwardOutput();
@@ -35,57 +45,25 @@ class JavaEnumFinderPluginFunctionalTest {
         BuildResult result = runner.build();
 
         String output = result.getOutput().replaceAll(projectDir.getAbsolutePath(), "");
-        Stream<String> lines = Arrays.stream(output.split("\\R"));
-        List<String> actualLines = lines.filter(s -> !s.contains("BUILD SUCCESSFUL") && !s.contains(" actionable task")).collect(Collectors.toList());
+        List<String> lines = Arrays.stream(output.split("\\R"))
+                .map(s->s.replaceAll("BUILD SUCCESSFUL in \\d+([ms]+)", "BUILD SUCCESSFUL in XXX"))
+                .collect(Collectors.toList())
+                ;
 
-        List<String> expectedLines = FileUtils.readLines(new File(this.getClass().getClassLoader().getResource("test1/expected.csv").getFile()), Charset.defaultCharset());
+        assertEquals(expectedLines, FileUtils.readLines(new File(projectDir, expectedFilePath), Charset.defaultCharset()));
 
-        assertEquals(expectedLines, FileUtils.readLines(new File(projectDir, "build/AccessMode.csv"), Charset.defaultCharset()));
+        assertEquals(outputLines, lines);
     }
 
 
-    @Test
-    void test2() throws IOException {
-        File sourceDir = new File(this.getClass().getClassLoader().getResource("test2/input").getFile());
-
-        FileUtils.copyDirectory(sourceDir, projectDir);
-
-        GradleRunner runner = GradleRunner.create();
-        runner.forwardOutput();
-        runner.withPluginClasspath();
-        runner.withArguments("javaEnumFind");
-        runner.withProjectDir(projectDir);
-        BuildResult result = runner.build();
-
-        String output = result.getOutput().replaceAll(projectDir.getAbsolutePath(), "");
-        Stream<String> lines = Arrays.stream(output.split("\\R"));
-        List<String> actualLines = lines.filter(s -> !s.contains("BUILD SUCCESSFUL") && !s.contains(" actionable task")).collect(Collectors.toList());
-
-        List<String> expectedLines = FileUtils.readLines(new File(this.getClass().getClassLoader().getResource("test2/expected.csv").getFile()), Charset.defaultCharset());
-
-        assertEquals(expectedLines, FileUtils.readLines(new File(projectDir, "m2/build/AccessMode.csv"), Charset.defaultCharset()));
-
-    }
-
-
-    @Test
-    void test3() throws IOException {
-        File sourceDir = new File(this.getClass().getClassLoader().getResource("test3/input").getFile());
-
-        FileUtils.copyDirectory(sourceDir, projectDir);
-
-        GradleRunner runner = GradleRunner.create();
-        runner.forwardOutput();
-        runner.withPluginClasspath();
-        runner.withArguments("javaEnumFind");
-        runner.withProjectDir(projectDir);
-        BuildResult result = runner.build();
-
-        String output = result.getOutput().replaceAll(projectDir.getAbsolutePath(), "");
-        Stream<String> lines = Arrays.stream(output.split("\\R"));
-        List<String> actualLines = lines.filter(s -> !s.contains("BUILD SUCCESSFUL") && !s.contains(" actionable task")).collect(Collectors.toList());
-        List<String> expectedLines = FileUtils.readLines(new File(this.getClass().getClassLoader().getResource("test3/expected.csv").getFile()), Charset.defaultCharset());
-        assertEquals(expectedLines, FileUtils.readLines(new File(projectDir, "m2/build/AccessSpecifier.csv"), Charset.defaultCharset()));
-
+    static class ScenarioArgumentsProvider implements ArgumentsProvider {
+        @Override
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
+            return Stream.of(
+                    Arguments.of("test1", "build/AccessMode.csv"),
+                    Arguments.of("test2", "m2/build/AccessMode.csv"),
+                    Arguments.of("test3", "m2/build/AccessSpecifier.csv")
+            );
+        }
     }
 }
