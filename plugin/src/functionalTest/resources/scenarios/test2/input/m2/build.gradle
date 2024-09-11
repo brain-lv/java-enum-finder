@@ -1,0 +1,8 @@
+plugins {
+    id('java')
+    id('lv.brain.gradle.javaEnumFinder')
+}
+javaEnumFinder{
+    target java.nio.file.AccessMode
+    sources = files(rootProject.rootDir)
+}

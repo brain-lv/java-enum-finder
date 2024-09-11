@@ -1,0 +1,4 @@
+> Task :javaEnumFind
+
+BUILD SUCCESSFUL in XXX
+1 actionable task: 1 executed
